@@ -1,3 +1,11 @@
+# Using tcl8.6.11 as source
+vcpkg_from_github(
+    OUT_SOURCE_PATH TCL_SOURCE_PATH
+    REPO tcltk/tcl
+    REF 590390207d727708be57b4908eb24dbe705d090c
+    SHA512 4a4cc54bd3b8f498af4bc62733ca4b101482548b9aa6d1052f05523231bdb5a09d148be083404f468d1b90a71e5490c6a693c13fbcbcf5a0e106086f85a0df0b
+)
+
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO tcltk/tk
@@ -35,7 +43,33 @@ if (VCPKG_TARGET_IS_WINDOWS)
     if ("utfmax" IN_LIST FEATURES)
         set(TCL_BUILD_OPTS ${TCL_BUILD_OPTS},time64bit)
     endif()
-    
+
+
+    set(saved_path "$ENV{PATH}")
+    set(saved_include "$ENV{INCLUDE}")
+
+    vcpkg_install_nmake(
+        SOURCE_PATH ${TCL_SOURCE_PATH}
+        PROJECT_SUBPATH win
+        OPTIONS
+            ${TCL_BUILD_MACHINE_STR}
+            ${TCL_BUILD_STATS}
+            ${TCL_BUILD_CHECKS}
+        OPTIONS_DEBUG
+            ${TCL_BUILD_OPTS},symbols
+            # TCLDIR=${TCL_SOURCE_PATH}
+            INSTALLDIR=${CURRENT_PACKAGES_DIR}/debug
+            # SCRIPT_INSTALL_DIR=${CURRENT_PACKAGES_DIR}/tools/tk/debug/lib/tk8.6
+        OPTIONS_RELEASE
+            release
+            ${TCL_BUILD_OPTS}
+            INSTALLDIR=${CURRENT_PACKAGES_DIR}
+            # SCRIPT_INSTALL_DIR=${CURRENT_PACKAGES_DIR}/tools/tk/lib/tk8.6
+    )
+
+    set(ENV{PATH} "${saved_path}")
+    set(ENV{INCLUDE} "${saved_include}")
+
     vcpkg_install_nmake(
         SOURCE_PATH ${SOURCE_PATH}
         PROJECT_SUBPATH win
@@ -46,14 +80,13 @@ if (VCPKG_TARGET_IS_WINDOWS)
         OPTIONS_DEBUG
             ${TCL_BUILD_OPTS},symbols
             INSTALLDIR=${CURRENT_PACKAGES_DIR}/debug
-            SCRIPT_INSTALL_DIR=${CURRENT_PACKAGES_DIR}/tools/tcl/debug/lib/tcl8.6
+            # SCRIPT_INSTALL_DIR=${CURRENT_PACKAGES_DIR}/tools/tk/debug/lib/tk8.6
         OPTIONS_RELEASE
             release
             ${TCL_BUILD_OPTS}
             INSTALLDIR=${CURRENT_PACKAGES_DIR}
-            SCRIPT_INSTALL_DIR=${CURRENT_PACKAGES_DIR}/tools/tcl/lib/tcl8.6
+            # SCRIPT_INSTALL_DIR=${CURRENT_PACKAGES_DIR}/tools/tk/lib/tk8.6
     )
-
 
     # Install
     # Note: tcl shell requires it to be in a folder adjacent to the /lib/ folder, i.e. in a /bin/ folder
@@ -65,10 +98,7 @@ if (VCPKG_TARGET_IS_WINDOWS)
         file(COPY ${TOOL_BIN} DESTINATION ${CURRENT_PACKAGES_DIR}/tools/tcl/bin/)
 
         # Remove .exes only after copying
-        file(GLOB_RECURSE TOOL_EXES
-                ${CURRENT_PACKAGES_DIR}/bin/*.exe
-        )
-        file(REMOVE ${TOOL_EXES})
+        file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin/*.exe)
 
         file(GLOB_RECURSE TOOLS
                 ${CURRENT_PACKAGES_DIR}/lib/dde1.4/*
@@ -99,10 +129,7 @@ if (VCPKG_TARGET_IS_WINDOWS)
         file(COPY ${TOOL_BIN} DESTINATION ${CURRENT_PACKAGES_DIR}/tools/tcl/debug/bin/)
 
         # Remove .exes only after copying
-        file(GLOB_RECURSE EXES
-                ${CURRENT_PACKAGES_DIR}/debug/bin/*.exe
-        )
-        file(REMOVE ${EXES})
+        file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/bin/*.exe)
     
         file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/lib/dde1.4
                             ${CURRENT_PACKAGES_DIR}/debug/lib/nmake
